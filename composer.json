@@ -1,0 +1,19 @@
+{
+    "name": "yunwuxin/think-twig",
+    "description": "Twig Template For ThinkPHP5",
+    "license": "BSD-3-Clause",
+    "authors": [
+        {
+            "name": "yunwuxin",
+            "email": "448901948@qq.com"
+        }
+    ],
+    "require": {
+        "twig/twig": "^1.23"
+    },
+    "autoload": {
+        "psr-0": {
+            "classmap": "src/twig.php"
+        }
+    }
+}
