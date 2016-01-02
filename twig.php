@@ -14,20 +14,20 @@ namespace think\view\driver;
 
 class Twig
 {
-    private $template = null;
-
-    public function __construct($config = [])
-    {
-
-        $loader = new \Twig_Loader_Filesystem(VIEW_PATH);
-
-        $this->template = new \Twig_Environment($loader, [
-            'cache' => RUNTIME_PATH . 'template',
-        ]);
-    }
-
     public function fetch($template, $data = [], $cache = [])
     {
-        //TODO
+        if (is_file($template)) {
+            $loader   = new \Twig_Loader_Filesystem(THEME_PATH);
+            $template = substr($template, strlen(THEME_PATH));
+        } else {
+            $key      = md5($template);
+            $loader   = new \Twig_Loader_Array([$key => $template]);
+            $template = $key;
+        }
+        $twig = new \Twig_Environment($loader, [
+            'cache' => RUNTIME_PATH . 'template',
+        ]);
+
+        echo $twig->render($template, $data);
     }
 }
