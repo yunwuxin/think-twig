@@ -9,11 +9,11 @@
         }
     ],
     "require": {
-        "twig/twig": "^1.23"
+        "twig/twig": "*"
     },
     "autoload": {
         "classmap": [
-            "twig.php"
+            "src/Twig.php"
         ]
     }
 }
