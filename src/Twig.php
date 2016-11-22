@@ -11,46 +11,65 @@
 
 namespace think\view\driver;
 
-
 use DirectoryIterator;
+use think\App;
 use think\Config;
+use think\Loader;
+use think\Request;
 
 class Twig
 {
     // 模板引擎参数
     protected $config = [
+        'view_base'        => '',
         // 模板起始路径
-        'view_path'   => '',
+        'view_path'        => '',
         // 模板文件后缀
-        'view_suffix' => '.html',
+        'view_suffix'      => '.twig',
         // 模板文件名分隔符
-        'view_depr'   => '/',
-
-        'cache_path' => ''
+        'view_depr'        => '/',
+        'cache_path'       => TEMP_PATH,
+        'strict_variables' => true
     ];
 
     public function __construct($config = [])
     {
         $this->config($config);
-    }
 
-    /**
-     * 模板引擎配置项
-     * @access public
-     * @param array $config
-     * @return void
-     */
-    public function config($config)
-    {
-        $this->config = array_merge($this->config, $config);
-        if (empty($this->config['cache_path'])) {
-            $this->config['cache_path'] = RUNTIME_PATH . 'temp';
-        }
         if (!is_dir($this->config['cache_path'])) {
             if (!mkdir($this->config['cache_path'], 0755, true)) {
                 throw new \RuntimeException('Can not make the cache dir!');
             }
         }
+
+        if (empty($this->config['view_path'])) {
+            $this->config['view_path'] = App::$modulePath . 'view' . DS;
+        }
+    }
+
+    /**
+     * 模板引擎配置项
+     * @access public
+     * @param array|string $name
+     * @param mixed        $value
+     */
+    public function config($name, $value = null)
+    {
+        if (is_array($name)) {
+            $this->config = array_merge($this->config, $name);
+        } else {
+            $this->config[$name] = $value;
+        }
+    }
+
+    protected function getTwigConfig()
+    {
+        return [
+            'debug'            => App::$debug,
+            'auto_reload'      => App::$debug,
+            'cache'            => $this->config['cache_path'],
+            'strict_variables' => $this->config['strict_variables']
+        ];
     }
 
     public function fetch($template, $data = [], $config = [])
@@ -58,25 +77,24 @@ class Twig
         if ($config) {
             $this->config($config);
         }
-        $path = $this->config['view_path'] ?: (defined('VIEW_PATH') ? VIEW_PATH : '');
 
-        $loader = new \Twig_Loader_Filesystem($path);
+        $loader = new \Twig_Loader_Filesystem($this->config['view_path']);
 
-        if (APP_MULTI_MODULE) {
+        if (Config::get('app_multi_module')) {
             $modules = $this->getModules();
             foreach ($modules as $module) {
-                $view_dir = APP_PATH . $module . DIRECTORY_SEPARATOR . VIEW_LAYER;
+                if ($this->config['view_base']) {
+                    $view_dir = $this->config['view_base'] . $module;
+                } else {
+                    $view_dir = APP_PATH . $module . DS . 'view';
+                }
                 if (is_dir($view_dir)) {
                     $loader->addPath($view_dir, $module);
                 }
             }
         }
 
-        $twig = new \Twig_Environment($loader, [
-            'debug'       => APP_DEBUG,
-            'auto_reload' => true,
-            'cache'       => $this->config['cache_path']
-        ]);
+        $twig = new \Twig_Environment($loader, $this->getTwigConfig());
 
         $template = $this->parseTemplate($template);
 
@@ -91,29 +109,29 @@ class Twig
         $key    = md5($template);
         $loader = new \Twig_Loader_Array([$key => $template]);
 
-        $twig = new \Twig_Environment($loader, [
-            'debug'       => APP_DEBUG,
-            'auto_reload' => true,
-            'cache'       => $this->config['cache_path']
-        ]);
+        $twig = new \Twig_Environment($loader, $this->getTwigConfig());
 
         $twig->display($key, $data);
     }
 
     private function parseTemplate($template)
     {
+        $request = Request::instance();
+
         $depr = $this->config['view_depr'];
 
-        if (defined('CONTROLLER_NAME')) {
+        $controller = Loader::parseName($request->controller());
+
+        if ($controller && 0 !== strpos($template, '/')) {
             if ('' == $template) {
                 // 如果模板文件名为空 按照默认规则定位
-                $template = CONTROLLER_NAME . '.' . ACTION_NAME;
-            } elseif (false === strpos($template, '.')) {
-                $template = CONTROLLER_NAME . '.' . $template;
+                $template = str_replace('.', DS, $controller) . $depr . $request->action();
+            } elseif (false === strpos($template, '/')) {
+                $template = str_replace('.', DS, $controller) . $depr . $template;
             }
         }
 
-        return str_replace('.', $depr, $template) . $this->config['view_suffix'];
+        return str_replace('/', $depr, $template) . $this->config['view_suffix'];
     }
 
     private function getModules()

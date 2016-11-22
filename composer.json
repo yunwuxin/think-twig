@@ -15,5 +15,8 @@
         "classmap": [
             "src/Twig.php"
         ]
+    },
+    "require-dev": {
+        "topthink/framework": "^5.0"
     }
 }
