@@ -21,15 +21,16 @@ class Twig
 {
     // 模板引擎参数
     protected $config = [
-        'view_base'        => '',
+        'view_base'         => '',
         // 模板起始路径
-        'view_path'        => '',
+        'view_path'         => '',
         // 模板文件后缀
-        'view_suffix'      => '.twig',
+        'view_suffix'       => '.twig',
         // 模板文件名分隔符
-        'view_depr'        => '/',
-        'cache_path'       => TEMP_PATH,
-        'strict_variables' => true
+        'view_depr'         => '/',
+        'cache_path'        => TEMP_PATH,
+        'strict_variables'  => true,
+        'auto_add_function' => false
     ];
 
     public function __construct($config = [])
@@ -72,6 +73,31 @@ class Twig
         ];
     }
 
+    protected function addFunctions(\Twig_Environment $twig)
+    {
+        $functions = get_defined_functions()['user'];
+
+        array_map(function ($name) use ($twig) {
+
+            $function = new \Twig_SimpleFunction($name, $name);
+
+            $twig->addFunction($function);
+
+        }, $functions);
+
+    }
+
+    protected function getTwig(\Twig_LoaderInterface $loader)
+    {
+        $twig = new \Twig_Environment($loader, $this->getTwigConfig());
+
+        if ($this->config['auto_add_function']) {
+            $this->addFunctions($twig);
+        }
+
+        return $twig;
+    }
+
     public function fetch($template, $data = [], $config = [])
     {
         if ($config) {
@@ -94,7 +120,7 @@ class Twig
             }
         }
 
-        $twig = new \Twig_Environment($loader, $this->getTwigConfig());
+        $twig = $this->getTwig($loader);
 
         $template = $this->parseTemplate($template);
 
@@ -109,7 +135,7 @@ class Twig
         $key    = md5($template);
         $loader = new \Twig_Loader_Array([$key => $template]);
 
-        $twig = new \Twig_Environment($loader, $this->getTwigConfig());
+        $twig = $this->getTwig($loader);
 
         $twig->display($key, $data);
     }
