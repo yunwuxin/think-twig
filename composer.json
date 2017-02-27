@@ -9,7 +9,7 @@
         }
     ],
     "require": {
-        "twig/twig": "*"
+        "twig/twig": "^1.0"
     },
     "autoload": {
         "classmap": [

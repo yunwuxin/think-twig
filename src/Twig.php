@@ -75,16 +75,13 @@ class Twig
 
     protected function addFunctions(\Twig_Environment $twig)
     {
-        $functions = get_defined_functions()['user'];
+        $twig->registerUndefinedFunctionCallback(function ($name) {
+            if (function_exists($name)) {
+                return new \Twig_SimpleFunction($name, $name);
+            }
 
-        array_map(function ($name) use ($twig) {
-
-            $function = new \Twig_SimpleFunction($name, $name);
-
-            $twig->addFunction($function);
-
-        }, $functions);
-
+            return false;
+        });
     }
 
     protected function getTwig(\Twig_LoaderInterface $loader)
