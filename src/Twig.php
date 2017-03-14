@@ -115,7 +115,11 @@ class Twig
 
         if (!empty($this->config['filters'])) {
             foreach ($this->config['filters'] as $name => $filter) {
-                $twig->addFilter(new Twig_SimpleFilter($name, $filter));
+                if (is_integer($name)) {
+                    $twig->addFilter(new Twig_SimpleFilter($filter, $filter));
+                } else {
+                    $twig->addFilter(new Twig_SimpleFilter($name, $filter));
+                }
             }
         }
 
