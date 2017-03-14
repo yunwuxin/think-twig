@@ -12,10 +12,17 @@
 namespace think\view\driver;
 
 use DirectoryIterator;
+use RuntimeException;
 use think\App;
 use think\Config;
 use think\Loader;
 use think\Request;
+use Twig_Environment;
+use Twig_Loader_Array;
+use Twig_Loader_Filesystem;
+use Twig_LoaderInterface;
+use Twig_SimpleFilter;
+use Twig_SimpleFunction;
 
 class Twig
 {
@@ -30,7 +37,9 @@ class Twig
         'view_depr'         => '/',
         'cache_path'        => TEMP_PATH,
         'strict_variables'  => true,
-        'auto_add_function' => false
+        'auto_add_function' => false,
+        'functions'         => [],
+        'filters'           => []
     ];
 
     public function __construct($config = [])
@@ -39,7 +48,7 @@ class Twig
 
         if (!is_dir($this->config['cache_path'])) {
             if (!mkdir($this->config['cache_path'], 0755, true)) {
-                throw new \RuntimeException('Can not make the cache dir!');
+                throw new RuntimeException('Can not make the cache dir!');
             }
         }
 
@@ -73,23 +82,39 @@ class Twig
         ];
     }
 
-    protected function addFunctions(\Twig_Environment $twig)
+    protected function addFunctions(Twig_Environment $twig)
     {
         $twig->registerUndefinedFunctionCallback(function ($name) {
             if (function_exists($name)) {
-                return new \Twig_SimpleFunction($name, $name);
+                return new Twig_SimpleFunction($name, $name);
             }
 
             return false;
         });
     }
 
-    protected function getTwig(\Twig_LoaderInterface $loader)
+    protected function getTwig(Twig_LoaderInterface $loader)
     {
-        $twig = new \Twig_Environment($loader, $this->getTwigConfig());
+        $twig = new Twig_Environment($loader, $this->getTwigConfig());
 
         if ($this->config['auto_add_function']) {
             $this->addFunctions($twig);
+        }
+
+        if (!empty($this->config['functions'])) {
+            foreach ($this->config['functions'] as $name => $function) {
+                if (is_integer($name)) {
+                    $twig->addFunction(new Twig_SimpleFunction($function, $function));
+                } else {
+                    $twig->addFunction(new Twig_SimpleFunction($name, $function));
+                }
+            }
+        }
+
+        if (!empty($this->config['filters'])) {
+            foreach ($this->config['filters'] as $name => $filter) {
+                $twig->addFilter(new Twig_SimpleFilter($name, $filter));
+            }
         }
 
         return $twig;
@@ -101,7 +126,7 @@ class Twig
             $this->config($config);
         }
 
-        $loader = new \Twig_Loader_Filesystem(APP_PATH . $this->config['view_path']);
+        $loader = new Twig_Loader_Filesystem(APP_PATH . $this->config['view_path']);
 
         if (Config::get('app_multi_module')) {
             $modules = $this->getModules();
@@ -130,7 +155,7 @@ class Twig
             $this->config($config);
         }
         $key    = md5($template);
-        $loader = new \Twig_Loader_Array([$key => $template]);
+        $loader = new Twig_Loader_Array([$key => $template]);
 
         $twig = $this->getTwig($loader);
 
