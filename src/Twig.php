@@ -18,6 +18,7 @@ use think\Config;
 use think\Loader;
 use think\Request;
 use Twig_Environment;
+use Twig_FactoryRuntimeLoader;
 use Twig_Loader_Array;
 use Twig_Loader_Filesystem;
 use Twig_LoaderInterface;
@@ -39,7 +40,8 @@ class Twig
         'strict_variables'  => true,
         'auto_add_function' => false,
         'functions'         => [],
-        'filters'           => []
+        'filters'           => [],
+        'runtime'           => []
     ];
 
     public function __construct($config = [])
@@ -115,6 +117,10 @@ class Twig
             foreach ($this->config['filters'] as $name => $filter) {
                 $twig->addFilter(new Twig_SimpleFilter($name, $filter));
             }
+        }
+
+        if (!empty($this->config['runtime'])) {
+            $twig->addRuntimeLoader(new Twig_FactoryRuntimeLoader($this->config['runtime']));
         }
 
         return $twig;
