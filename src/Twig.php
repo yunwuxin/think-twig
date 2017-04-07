@@ -41,6 +41,7 @@ class Twig
         'auto_add_function' => false,
         'functions'         => [],
         'filters'           => [],
+        'globals'           => [],
         'runtime'           => []
     ];
 
@@ -101,6 +102,12 @@ class Twig
 
         if ($this->config['auto_add_function']) {
             $this->addFunctions($twig);
+        }
+
+        if (!empty($this->config['globals'])) {
+            foreach ($this->config['globals'] as $name => $global) {
+                $twig->addGlobal($name, $global);
+            }
         }
 
         if (!empty($this->config['functions'])) {
