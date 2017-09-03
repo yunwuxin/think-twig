@@ -143,7 +143,7 @@ class Twig
             $this->config($config);
         }
 
-        $loader = new Twig_Loader_Filesystem(APP_PATH . $this->config['view_path']);
+        $loader = new Twig_Loader_Filesystem( $this->config['view_path']);
 
         if (Config::get('app_multi_module')) {
             $modules = $this->getModules();
@@ -196,7 +196,7 @@ class Twig
             }
         }
 
-        return str_replace('/', $depr, $template) . $this->config['view_suffix'];
+        return str_replace('/', $depr, $template) . '.'.$this->config['view_suffix'];
     }
 
     private function getModules()
