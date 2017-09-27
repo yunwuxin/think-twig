@@ -6,22 +6,23 @@
 // +----------------------------------------------------------------------
 // | Licensed ( http://www.apache.org/licenses/LICENSE-2.0 )
 // +----------------------------------------------------------------------
-// | Author: yunwuxin <448901948@qq.com>　
+// | Author: yunwuxin <448901948@qq.com>
 // +----------------------------------------------------------------------
 
 namespace think\view\driver;
 
 use DirectoryIterator;
 use RuntimeException;
-use think\App;
-use think\Config;
-use think\Loader;
-use think\Request;
+use think\facade\App;
+use think\facade\Config;
+use think\facade\Env;
+use think\facade\Loader;
+use think\facade\Request;
 use Twig_Environment;
 use Twig_FactoryRuntimeLoader;
+use Twig_LoaderInterface;
 use Twig_Loader_Array;
 use Twig_Loader_Filesystem;
-use Twig_LoaderInterface;
 use Twig_SimpleFilter;
 use Twig_SimpleFunction;
 
@@ -42,7 +43,7 @@ class Twig
         'functions'         => [],
         'filters'           => [],
         'globals'           => [],
-        'runtime'           => []
+        'runtime'           => [],
     ];
 
     public function __construct($config = [])
@@ -56,7 +57,7 @@ class Twig
         }
 
         if (empty($this->config['view_path'])) {
-            $this->config['view_path'] = App::$modulePath . 'view' . DS;
+            $this->config['view_path'] = Env::get('module_path') . 'view' . DIRECTORY_SEPARATOR;
         }
     }
 
@@ -78,10 +79,10 @@ class Twig
     protected function getTwigConfig()
     {
         return [
-            'debug'            => App::$debug,
-            'auto_reload'      => App::$debug,
+            'debug'            => App::isDebug(),
+            'auto_reload'      => App::isDebug(),
             'cache'            => $this->config['cache_path'],
-            'strict_variables' => $this->config['strict_variables']
+            'strict_variables' => $this->config['strict_variables'],
         ];
     }
 
@@ -151,7 +152,7 @@ class Twig
                 if ($this->config['view_base']) {
                     $view_dir = $this->config['view_base'] . $module;
                 } else {
-                    $view_dir = APP_PATH . $module . DS . 'view';
+                    $view_dir = Env::get('app_path') . $module . DIRECTORY_SEPARATOR . 'view';
                 }
                 if (is_dir($view_dir)) {
                     $loader->addPath($view_dir, $module);
@@ -181,18 +182,16 @@ class Twig
 
     private function parseTemplate($template)
     {
-        $request = Request::instance();
-
         $depr = $this->config['view_depr'];
 
-        $controller = Loader::parseName($request->controller());
+        $controller = Loader::parseName(Request::controller());
 
         if ($controller && 0 !== strpos($template, '/')) {
             if ('' == $template) {
                 // 如果模板文件名为空 按照默认规则定位
-                $template = str_replace('.', DS, $controller) . $depr . $request->action();
+                $template = str_replace('.', DIRECTORY_SEPARATOR, $controller) . $depr . Request::action();
             } elseif (false === strpos($template, '/')) {
-                $template = str_replace('.', DS, $controller) . $depr . $template;
+                $template = str_replace('.', DIRECTORY_SEPARATOR, $controller) . $depr . $template;
             }
         }
 
@@ -202,7 +201,7 @@ class Twig
     private function getModules()
     {
         $modules      = [];
-        $oDir         = new DirectoryIterator(APP_PATH);
+        $oDir         = new DirectoryIterator(Env::get('app_path'));
         $deny_modules = Config::get('deny_module_list');
         foreach ($oDir as $file) {
             if ($file->isDir() && !$file->isDot() && !in_array($file->getFilename(), $deny_modules)) {
