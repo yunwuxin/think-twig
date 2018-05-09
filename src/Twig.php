@@ -6,23 +6,18 @@
 // +----------------------------------------------------------------------
 // | Licensed ( http://www.apache.org/licenses/LICENSE-2.0 )
 // +----------------------------------------------------------------------
-// | Author: yunwuxin <448901948@qq.com>
+// | Author: yunwuxin <448901948@qq.com>　
 // +----------------------------------------------------------------------
 
 namespace think\view\driver;
 
 use DirectoryIterator;
-use RuntimeException;
-use think\facade\App;
-use think\facade\Config;
-use think\facade\Env;
-use think\facade\Loader;
-use think\facade\Request;
+use think\Loader;
 use Twig_Environment;
 use Twig_FactoryRuntimeLoader;
-use Twig_LoaderInterface;
 use Twig_Loader_Array;
 use Twig_Loader_Filesystem;
+use Twig_LoaderInterface;
 use Twig_SimpleFilter;
 use Twig_SimpleFunction;
 
@@ -34,35 +29,34 @@ class Twig
         // 模板起始路径
         'view_path'         => '',
         // 模板文件后缀
-        'view_suffix'       => '.twig',
+        'view_suffix'       => 'twig',
         // 模板文件名分隔符
         'view_depr'         => '/',
-        'cache_path'        => TEMP_PATH,
+        'cache_path'        => '',
         'strict_variables'  => true,
         'auto_add_function' => false,
         'functions'         => [],
         'filters'           => [],
         'globals'           => [],
-        'runtime'           => [],
+        'runtime'           => []
     ];
 
     public function __construct($config = [])
     {
         $this->config($config);
 
-        if (!is_dir($this->config['cache_path'])) {
-            if (!mkdir($this->config['cache_path'], 0755, true)) {
-                throw new RuntimeException('Can not make the cache dir!');
-            }
+        if (empty($this->config['cache_path'])) {
+            $this->config['cache_path'] = app()->getRuntimePath() . 'temp/';
         }
 
         if (empty($this->config['view_path'])) {
-            $this->config['view_path'] = Env::get('module_path') . 'view' . DIRECTORY_SEPARATOR;
+            $this->config['view_path'] = app()->getModulePath() . 'view/';
         }
     }
 
     /**
      * 模板引擎配置项
+     *
      * @access public
      * @param array|string $name
      * @param mixed        $value
@@ -79,10 +73,10 @@ class Twig
     protected function getTwigConfig()
     {
         return [
-            'debug'            => App::isDebug(),
-            'auto_reload'      => App::isDebug(),
+            'debug'            => app()->isDebug(),
+            'auto_reload'      => app()->isDebug(),
             'cache'            => $this->config['cache_path'],
-            'strict_variables' => $this->config['strict_variables'],
+            'strict_variables' => $this->config['strict_variables']
         ];
     }
 
@@ -146,13 +140,13 @@ class Twig
 
         $loader = new Twig_Loader_Filesystem($this->config['view_path']);
 
-        if (Config::get('app_multi_module')) {
+        if (config('app.multi_module')) {
             $modules = $this->getModules();
             foreach ($modules as $module) {
                 if ($this->config['view_base']) {
                     $view_dir = $this->config['view_base'] . $module;
                 } else {
-                    $view_dir = Env::get('app_path') . $module . DIRECTORY_SEPARATOR . 'view';
+                    $view_dir = app()->getAppPath() . $module . DIRECTORY_SEPARATOR . 'view';
                 }
                 if (is_dir($view_dir)) {
                     $loader->addPath($view_dir, $module);
@@ -182,27 +176,29 @@ class Twig
 
     private function parseTemplate($template)
     {
+        $request = request();
+
         $depr = $this->config['view_depr'];
 
-        $controller = Loader::parseName(Request::controller());
+        $controller = Loader::parseName($request->controller());
 
         if ($controller && 0 !== strpos($template, '/')) {
             if ('' == $template) {
                 // 如果模板文件名为空 按照默认规则定位
-                $template = str_replace('.', DIRECTORY_SEPARATOR, $controller) . $depr . Request::action();
+                $template = str_replace('.', DIRECTORY_SEPARATOR, $controller) . $depr . $request->action();
             } elseif (false === strpos($template, '/')) {
                 $template = str_replace('.', DIRECTORY_SEPARATOR, $controller) . $depr . $template;
             }
         }
 
-        return str_replace('/', $depr, $template) . $this->config['view_suffix'];
+        return str_replace('/', $depr, $template) . '.' . $this->config['view_suffix'];
     }
 
     private function getModules()
     {
         $modules      = [];
-        $oDir         = new DirectoryIterator(Env::get('app_path'));
-        $deny_modules = Config::get('deny_module_list');
+        $oDir         = new DirectoryIterator(app()->getAppPath());
+        $deny_modules = config('app.deny_module_list');
         foreach ($oDir as $file) {
             if ($file->isDir() && !$file->isDot() && !in_array($file->getFilename(), $deny_modules)) {
                 $modules[] = $file->getFilename();

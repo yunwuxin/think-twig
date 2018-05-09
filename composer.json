@@ -9,14 +9,12 @@
         }
     ],
     "require": {
-        "twig/twig": "^1.0"
+        "twig/twig": "^2.0",
+        "topthink/framework": "^5.1"
     },
     "autoload": {
         "classmap": [
             "src/Twig.php"
         ]
-    },
-    "require-dev": {
-        "topthink/framework": "^5.1"
     }
 }
