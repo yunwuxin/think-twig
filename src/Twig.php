@@ -29,20 +29,21 @@ class Twig
 {
     // 模板引擎参数
     protected $config = [
-        'view_base'         => '',
+        'view_base'           => '',
         // 模板起始路径
-        'view_path'         => '',
+        'view_path'           => '',
         // 模板文件后缀
-        'view_suffix'       => '.twig',
+        'view_suffix'         => '.twig',
         // 模板文件名分隔符
-        'view_depr'         => '/',
-        'cache_path'        => TEMP_PATH,
-        'strict_variables'  => true,
-        'auto_add_function' => false,
-        'functions'         => [],
-        'filters'           => [],
-        'globals'           => [],
-        'runtime'           => []
+        'view_depr'           => '/',
+        'cache_path'          => TEMP_PATH,
+        'strict_variables'    => true,
+        'auto_add_function'   => false,
+        'base_template_class' => 'Twig_Template',
+        'functions'           => [],
+        'filters'             => [],
+        'globals'             => [],
+        'runtime'             => [],
     ];
 
     public function __construct($config = [])
@@ -78,10 +79,11 @@ class Twig
     protected function getTwigConfig()
     {
         return [
-            'debug'            => App::$debug,
-            'auto_reload'      => App::$debug,
-            'cache'            => $this->config['cache_path'],
-            'strict_variables' => $this->config['strict_variables']
+            'debug'               => App::$debug,
+            'auto_reload'         => App::$debug,
+            'cache'               => $this->config['cache_path'],
+            'strict_variables'    => $this->config['strict_variables'],
+            'base_template_class' => $this->config['base_template_class']
         ];
     }
 
