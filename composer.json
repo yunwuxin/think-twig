@@ -10,7 +10,8 @@
     ],
     "require": {
         "twig/twig": "^2.0",
-        "topthink/framework": "^5.0"
+        "topthink/framework": "5.2.x-dev",
+        "topthink/think-view": "dev-master"
     },
     "autoload": {
         "classmap": [

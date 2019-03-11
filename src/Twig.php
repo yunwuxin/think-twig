@@ -11,12 +11,8 @@
 
 namespace think\view\driver;
 
-use DirectoryIterator;
 use RuntimeException;
 use think\App;
-use think\Config;
-use think\Loader;
-use think\Request;
 use Twig_Environment;
 use Twig_FactoryRuntimeLoader;
 use Twig_Loader_Array;
@@ -27,16 +23,16 @@ use Twig_SimpleFunction;
 
 class Twig
 {
+    /** @var App */
+    protected $app;
+
     // 模板引擎参数
     protected $config = [
-        'view_base'           => '',
         // 模板起始路径
         'view_path'           => '',
         // 模板文件后缀
-        'view_suffix'         => '.twig',
-        // 模板文件名分隔符
-        'view_depr'           => '/',
-        'cache_path'          => TEMP_PATH,
+        'view_suffix'         => 'twig',
+        'cache_path'          => '',
         'strict_variables'    => true,
         'auto_add_function'   => false,
         'base_template_class' => 'Twig_Template',
@@ -46,18 +42,23 @@ class Twig
         'runtime'             => [],
     ];
 
-    public function __construct($config = [])
+    public function __construct(App $app, $config = [])
     {
+        $this->app = $app;
         $this->config($config);
+
+        if (empty($this->config['view_path'])) {
+            $this->config['view_path'] = $app->getAppPath() . 'view';
+        }
+
+        if (empty($this->config['cache_path'])) {
+            $this->config['cache_path'] = $app->getRuntimePath() . 'temp';
+        }
 
         if (!is_dir($this->config['cache_path'])) {
             if (!mkdir($this->config['cache_path'], 0755, true)) {
                 throw new RuntimeException('Can not make the cache dir!');
             }
-        }
-
-        if (empty($this->config['view_path'])) {
-            $this->config['view_path'] = App::$modulePath . 'view' . DS;
         }
     }
 
@@ -79,8 +80,8 @@ class Twig
     protected function getTwigConfig()
     {
         return [
-            'debug'               => App::$debug,
-            'auto_reload'         => App::$debug,
+            'debug'               => $this->app->isDebug(),
+            'auto_reload'         => $this->app->isDebug(),
             'cache'               => $this->config['cache_path'],
             'strict_variables'    => $this->config['strict_variables'],
             'base_template_class' => $this->config['base_template_class']
@@ -147,25 +148,9 @@ class Twig
 
         $loader = new Twig_Loader_Filesystem($this->config['view_path']);
 
-        if (Config::get('app_multi_module')) {
-            $modules = $this->getModules();
-            foreach ($modules as $module) {
-                if ($this->config['view_base']) {
-                    $view_dir = $this->config['view_base'] . $module;
-                } else {
-                    $view_dir = APP_PATH . $module . DS . 'view';
-                }
-                if (is_dir($view_dir)) {
-                    $loader->addPath($view_dir, $module);
-                }
-            }
-        }
-
         $twig = $this->getTwig($loader);
 
-        $template = $this->parseTemplate($template);
-
-        $twig->display($template, $data);
+        $twig->display($template . '.' . $this->config['view_suffix'], $data);
     }
 
     public function display($template, $data = [], $config = [])
@@ -181,36 +166,4 @@ class Twig
         $twig->display($key, $data);
     }
 
-    private function parseTemplate($template)
-    {
-        $request = Request::instance();
-
-        $depr = $this->config['view_depr'];
-
-        $controller = Loader::parseName($request->controller());
-
-        if ($controller && 0 !== strpos($template, '/')) {
-            if ('' == $template) {
-                // 如果模板文件名为空 按照默认规则定位
-                $template = str_replace('.', DS, $controller) . $depr . $request->action();
-            } elseif (false === strpos($template, '/')) {
-                $template = str_replace('.', DS, $controller) . $depr . $template;
-            }
-        }
-
-        return str_replace('/', $depr, $template) . $this->config['view_suffix'];
-    }
-
-    private function getModules()
-    {
-        $modules      = [];
-        $oDir         = new DirectoryIterator(APP_PATH);
-        $deny_modules = Config::get('deny_module_list');
-        foreach ($oDir as $file) {
-            if ($file->isDir() && !$file->isDot() && !in_array($file->getFilename(), $deny_modules)) {
-                $modules[] = $file->getFilename();
-            }
-        }
-        return $modules;
-    }
 }
