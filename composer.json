@@ -18,6 +18,9 @@
         },
         "classmap": [
             "src/Twig.php"
+        ],
+        "files": [
+            "src/help.php"
         ]
     }
 }
