@@ -13,13 +13,14 @@ namespace think\view\driver;
 
 use RuntimeException;
 use think\App;
-use Twig_Environment;
-use Twig_FactoryRuntimeLoader;
-use Twig_Loader_Array;
-use Twig_Loader_Filesystem;
-use Twig_LoaderInterface;
-use Twig_SimpleFilter;
-use Twig_SimpleFunction;
+use Twig\Environment;
+use Twig\Loader\ArrayLoader;
+use Twig\Loader\FilesystemLoader;
+use Twig\Loader\LoaderInterface;
+use Twig\RuntimeLoader\FactoryRuntimeLoader;
+use Twig\TwigFilter;
+use Twig\TwigFunction;
+use yunwuxin\twig\Extension;
 
 class Twig
 {
@@ -88,20 +89,20 @@ class Twig
         ];
     }
 
-    protected function addFunctions(Twig_Environment $twig)
+    protected function addFunctions(Environment $twig)
     {
         $twig->registerUndefinedFunctionCallback(function ($name) {
             if (function_exists($name)) {
-                return new Twig_SimpleFunction($name, $name);
+                return new TwigFunction($name, $name);
             }
 
             return false;
         });
     }
 
-    protected function getTwig(Twig_LoaderInterface $loader)
+    protected function getTwig(LoaderInterface $loader)
     {
-        $twig = new Twig_Environment($loader, $this->getTwigConfig());
+        $twig = new Environment($loader, $this->getTwigConfig());
 
         if ($this->config['auto_add_function']) {
             $this->addFunctions($twig);
@@ -116,9 +117,9 @@ class Twig
         if (!empty($this->config['functions'])) {
             foreach ($this->config['functions'] as $name => $function) {
                 if (is_integer($name)) {
-                    $twig->addFunction(new Twig_SimpleFunction($function, $function));
+                    $twig->addFunction(new TwigFunction($function, $function));
                 } else {
-                    $twig->addFunction(new Twig_SimpleFunction($name, $function));
+                    $twig->addFunction(new TwigFunction($name, $function));
                 }
             }
         }
@@ -126,16 +127,18 @@ class Twig
         if (!empty($this->config['filters'])) {
             foreach ($this->config['filters'] as $name => $filter) {
                 if (is_integer($name)) {
-                    $twig->addFilter(new Twig_SimpleFilter($filter, $filter));
+                    $twig->addFilter(new TwigFilter($filter, $filter));
                 } else {
-                    $twig->addFilter(new Twig_SimpleFilter($name, $filter));
+                    $twig->addFilter(new TwigFilter($name, $filter));
                 }
             }
         }
 
         if (!empty($this->config['runtime'])) {
-            $twig->addRuntimeLoader(new Twig_FactoryRuntimeLoader($this->config['runtime']));
+            $twig->addRuntimeLoader(new FactoryRuntimeLoader($this->config['runtime']));
         }
+
+        $twig->addExtension(new Extension());
 
         return $twig;
     }
@@ -146,7 +149,7 @@ class Twig
             $this->config($config);
         }
 
-        $loader = new Twig_Loader_Filesystem($this->config['view_path']);
+        $loader = new FilesystemLoader($this->config['view_path']);
 
         $twig = $this->getTwig($loader);
 
@@ -159,7 +162,7 @@ class Twig
             $this->config($config);
         }
         $key    = md5($template);
-        $loader = new Twig_Loader_Array([$key => $template]);
+        $loader = new ArrayLoader([$key => $template]);
 
         $twig = $this->getTwig($loader);
 
