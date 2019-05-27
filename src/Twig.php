@@ -13,32 +13,34 @@ namespace think\view\driver;
 
 use DirectoryIterator;
 use think\Loader;
-use Twig_Environment;
-use Twig_FactoryRuntimeLoader;
-use Twig_Loader_Array;
-use Twig_Loader_Filesystem;
-use Twig_LoaderInterface;
-use Twig_SimpleFilter;
-use Twig_SimpleFunction;
+use Twig\Environment;
+use Twig\Loader\ArrayLoader;
+use Twig\Loader\FilesystemLoader;
+use Twig\Loader\LoaderInterface;
+use Twig\RuntimeLoader\FactoryRuntimeLoader;
+use Twig\TwigFilter;
+use Twig\TwigFunction;
+use yunwuxin\twig\Extension;
 
 class Twig
 {
     // 模板引擎参数
     protected $config = [
-        'view_base'         => '',
+        'view_base'           => '',
         // 模板起始路径
-        'view_path'         => '',
+        'view_path'           => '',
         // 模板文件后缀
-        'view_suffix'       => 'twig',
+        'view_suffix'         => 'twig',
         // 模板文件名分隔符
-        'view_depr'         => '/',
-        'cache_path'        => '',
-        'strict_variables'  => true,
-        'auto_add_function' => false,
-        'functions'         => [],
-        'filters'           => [],
-        'globals'           => [],
-        'runtime'           => []
+        'view_depr'           => '/',
+        'cache_path'          => '',
+        'strict_variables'    => true,
+        'auto_add_function'   => false,
+        'base_template_class' => 'Twig_Template',
+        'functions'           => [],
+        'filters'             => [],
+        'globals'             => [],
+        'runtime'             => [],
     ];
 
     public function __construct($config = [])
@@ -73,27 +75,28 @@ class Twig
     protected function getTwigConfig()
     {
         return [
-            'debug'            => app()->isDebug(),
-            'auto_reload'      => app()->isDebug(),
-            'cache'            => $this->config['cache_path'],
-            'strict_variables' => $this->config['strict_variables']
+            'debug'               => app()->isDebug(),
+            'auto_reload'         => app()->isDebug(),
+            'cache'               => $this->config['cache_path'],
+            'strict_variables'    => $this->config['strict_variables'],
+            'base_template_class' => $this->config['base_template_class'],
         ];
     }
 
-    protected function addFunctions(Twig_Environment $twig)
+    protected function addFunctions(Environment $twig)
     {
         $twig->registerUndefinedFunctionCallback(function ($name) {
             if (function_exists($name)) {
-                return new Twig_SimpleFunction($name, $name);
+                return new TwigFunction($name, $name);
             }
 
             return false;
         });
     }
 
-    protected function getTwig(Twig_LoaderInterface $loader)
+    protected function getTwig(LoaderInterface $loader)
     {
-        $twig = new Twig_Environment($loader, $this->getTwigConfig());
+        $twig = new Environment($loader, $this->getTwigConfig());
 
         if ($this->config['auto_add_function']) {
             $this->addFunctions($twig);
@@ -108,9 +111,9 @@ class Twig
         if (!empty($this->config['functions'])) {
             foreach ($this->config['functions'] as $name => $function) {
                 if (is_integer($name)) {
-                    $twig->addFunction(new Twig_SimpleFunction($function, $function));
+                    $twig->addFunction(new TwigFunction($function, $function));
                 } else {
-                    $twig->addFunction(new Twig_SimpleFunction($name, $function));
+                    $twig->addFunction(new TwigFunction($name, $function));
                 }
             }
         }
@@ -118,16 +121,18 @@ class Twig
         if (!empty($this->config['filters'])) {
             foreach ($this->config['filters'] as $name => $filter) {
                 if (is_integer($name)) {
-                    $twig->addFilter(new Twig_SimpleFilter($filter, $filter));
+                    $twig->addFilter(new TwigFilter($filter, $filter));
                 } else {
-                    $twig->addFilter(new Twig_SimpleFilter($name, $filter));
+                    $twig->addFilter(new TwigFilter($name, $filter));
                 }
             }
         }
 
         if (!empty($this->config['runtime'])) {
-            $twig->addRuntimeLoader(new Twig_FactoryRuntimeLoader($this->config['runtime']));
+            $twig->addRuntimeLoader(new FactoryRuntimeLoader($this->config['runtime']));
         }
+
+        $twig->addExtension(new Extension());
 
         return $twig;
     }
@@ -138,7 +143,7 @@ class Twig
             $this->config($config);
         }
 
-        $loader = new Twig_Loader_Filesystem($this->config['view_path']);
+        $loader = new FilesystemLoader($this->config['view_path']);
 
         if (config('app.multi_module')) {
             $modules = $this->getModules();
@@ -167,7 +172,7 @@ class Twig
             $this->config($config);
         }
         $key    = md5($template);
-        $loader = new Twig_Loader_Array([$key => $template]);
+        $loader = new ArrayLoader([$key => $template]);
 
         $twig = $this->getTwig($loader);
 

@@ -13,8 +13,14 @@
         "topthink/framework": "^5.1"
     },
     "autoload": {
+        "psr-4": {
+            "yunwuxin\\twig\\": "src/"
+        },
         "classmap": [
             "src/Twig.php"
+        ],
+        "files": [
+            "src/help.php"
         ]
     }
 }
