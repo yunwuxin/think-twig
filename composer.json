@@ -9,6 +9,7 @@
         }
     ],
     "require": {
+        "php": "^7.0",
         "twig/twig": "^2.0",
         "topthink/framework": "~5.0.0"
     },
