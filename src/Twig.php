@@ -13,16 +13,16 @@ namespace think\view\driver;
 
 use RuntimeException;
 use think\App;
+use think\contract\TemplateHandlerInterface;
 use Twig\Environment;
 use Twig\Loader\ArrayLoader;
 use Twig\Loader\FilesystemLoader;
-use Twig\Loader\LoaderInterface;
 use Twig\RuntimeLoader\FactoryRuntimeLoader;
 use Twig\TwigFilter;
 use Twig\TwigFunction;
 use yunwuxin\twig\Extension;
 
-class Twig
+class Twig implements TemplateHandlerInterface
 {
     /** @var App */
     protected $app;
@@ -43,6 +43,12 @@ class Twig
         'runtime'             => [],
     ];
 
+    /** @var FilesystemLoader */
+    protected $loader;
+
+    /** @var Environment */
+    protected $twig;
+
     public function __construct(App $app, $config = [])
     {
         $this->app = $app;
@@ -61,48 +67,13 @@ class Twig
                 throw new RuntimeException('Can not make the cache dir!');
             }
         }
+
+        $this->createTwig();
     }
 
-    /**
-     * 模板引擎配置项
-     * @access public
-     * @param array|string $name
-     * @param mixed        $value
-     */
-    public function config($name, $value = null)
+    protected function createTwig()
     {
-        if (is_array($name)) {
-            $this->config = array_merge($this->config, $name);
-        } else {
-            $this->config[$name] = $value;
-        }
-    }
-
-    protected function getTwigConfig()
-    {
-        return [
-            'debug'               => $this->app->isDebug(),
-            'auto_reload'         => $this->app->isDebug(),
-            'cache'               => $this->config['cache_path'],
-            'strict_variables'    => $this->config['strict_variables'],
-            'base_template_class' => $this->config['base_template_class']
-        ];
-    }
-
-    protected function addFunctions(Environment $twig)
-    {
-        $twig->registerUndefinedFunctionCallback(function ($name) {
-            if (function_exists($name)) {
-                return new TwigFunction($name, $name);
-            }
-
-            return false;
-        });
-    }
-
-    protected function getTwig(LoaderInterface $loader)
-    {
-        $twig = new Environment($loader, $this->getTwigConfig());
+        $twig = new Environment($this->loader, $this->getTwigConfig());
 
         if ($this->config['auto_add_function']) {
             $this->addFunctions($twig);
@@ -140,33 +111,89 @@ class Twig
 
         $twig->addExtension(new Extension());
 
-        return $twig;
+        $this->twig = $twig;
     }
 
-    public function fetch($template, $data = [], $config = [])
+    /**
+     * 模板引擎配置项
+     * @param array $config
+     */
+    public function config(array $config): void
     {
-        if ($config) {
-            $this->config($config);
-        }
-
-        $loader = new FilesystemLoader($this->config['view_path']);
-
-        $twig = $this->getTwig($loader);
-
-        $twig->display($template . '.' . $this->config['view_suffix'], $data);
+        $this->config = array_merge($this->config, $config);
     }
 
-    public function display($template, $data = [], $config = [])
+    protected function getTwigConfig()
     {
-        if ($config) {
-            $this->config($config);
-        }
-        $key    = md5($template);
-        $loader = new ArrayLoader([$key => $template]);
-
-        $twig = $this->getTwig($loader);
-
-        $twig->display($key, $data);
+        return [
+            'debug'               => $this->app->isDebug(),
+            'auto_reload'         => $this->app->isDebug(),
+            'cache'               => $this->config['cache_path'],
+            'strict_variables'    => $this->config['strict_variables'],
+            'base_template_class' => $this->config['base_template_class'],
+        ];
     }
 
+    protected function addFunctions(Environment $twig)
+    {
+        $twig->registerUndefinedFunctionCallback(function ($name) {
+            if (function_exists($name)) {
+                return new TwigFunction($name, $name);
+            }
+
+            return false;
+        });
+    }
+
+    public function fetch(string $template, array $data = []): void
+    {
+        $this->twig->setLoader($this->loader);
+        $this->twig->display($template . '.' . $this->config['view_suffix'], $data);
+    }
+
+    public function display(string $content, array $data = []): void
+    {
+        $name = md5($content);
+
+        $this->twig->setLoader(new ArrayLoader([$name => $content]));
+        $this->twig->display($name, $data);
+    }
+
+    /**
+     * 检测是否存在模板文件
+     * @access public
+     * @param string $template 模板文件或者模板规则
+     * @return bool
+     */
+    public function exists(string $template): bool
+    {
+        return $this->loader->exists($template);
+    }
+
+    /**
+     * 获取模板引擎配置
+     * @access public
+     * @param string $name 参数名
+     * @return void
+     */
+    public function getConfig(string $name)
+    {
+        return $this->config[$name] ?? null;
+    }
+
+    /**
+     * @return FilesystemLoader
+     */
+    public function getLoader()
+    {
+        return $this->loader;
+    }
+
+    /**
+     * @return Environment
+     */
+    public function getTwig()
+    {
+        return $this->twig;
+    }
 }
