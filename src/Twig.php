@@ -73,6 +73,8 @@ class Twig implements TemplateHandlerInterface
 
     protected function createTwig()
     {
+        $this->loader = new FilesystemLoader($this->config['view_path']);
+
         $twig = new Environment($this->loader, $this->getTwigConfig());
 
         if ($this->config['auto_add_function']) {
