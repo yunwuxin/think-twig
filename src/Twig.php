@@ -31,6 +31,7 @@ class Twig implements TemplateHandlerInterface
     protected $config = [
         // 模板起始路径
         'view_path'           => '',
+        'view_dir_name'       => 'view',
         // 模板文件后缀
         'view_suffix'         => 'twig',
         'cache_path'          => '',
@@ -55,7 +56,14 @@ class Twig implements TemplateHandlerInterface
         $this->config($config);
 
         if (empty($this->config['view_path'])) {
-            $this->config['view_path'] = $app->getAppPath() . 'view';
+            $view = $this->config['view_dir_name'];
+            if (is_dir($this->app->getAppPath() . $view)) {
+                $path = $this->app->getAppPath() . $view . DIRECTORY_SEPARATOR;
+            } else {
+                $appName = $this->app->http->getName();
+                $path    = $this->app->getRootPath() . $view . DIRECTORY_SEPARATOR . ($appName ? $appName . DIRECTORY_SEPARATOR : '');
+            }
+            $this->config['view_path'] = $path;
         }
 
         if (empty($this->config['cache_path'])) {
