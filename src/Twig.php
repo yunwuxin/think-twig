@@ -35,10 +35,7 @@ class Twig implements TemplateHandlerInterface
         // 模板文件后缀
         'view_suffix'         => 'twig',
         'cache_path'          => '',
-        'strict_variables'    => true,
-        'auto_add_function'   => false,
         'base_template_class' => 'Twig_Template',
-        'functions'           => [],
         'filters'             => [],
         'globals'             => [],
         'runtime'             => [],
@@ -88,23 +85,11 @@ class Twig implements TemplateHandlerInterface
 
         $twig = new Environment($this->loader, $this->getTwigConfig());
 
-        if ($this->config['auto_add_function']) {
-            $this->addFunctions($twig);
-        }
+        $this->addFunctions($twig);
 
         if (!empty($this->config['globals'])) {
             foreach ($this->config['globals'] as $name => $global) {
                 $twig->addGlobal($name, $global);
-            }
-        }
-
-        if (!empty($this->config['functions'])) {
-            foreach ($this->config['functions'] as $name => $function) {
-                if (is_integer($name)) {
-                    $twig->addFunction(new TwigFunction($function, $function));
-                } else {
-                    $twig->addFunction(new TwigFunction($name, $function));
-                }
             }
         }
 
@@ -142,7 +127,7 @@ class Twig implements TemplateHandlerInterface
             'debug'               => $this->app->isDebug(),
             'auto_reload'         => $this->app->isDebug(),
             'cache'               => $this->config['cache_path'],
-            'strict_variables'    => $this->config['strict_variables'],
+            'strict_variables'    => true,
             'base_template_class' => $this->config['base_template_class'],
         ];
     }
