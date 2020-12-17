@@ -1,11 +1,4 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: yunwuxin
- * Date: 2019/3/14
- * Time: 15:12
- */
-
 
 namespace yunwuxin\twig\nodes;
 

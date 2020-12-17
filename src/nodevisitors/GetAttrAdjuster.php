@@ -1,10 +1,4 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: yunwuxin
- * Date: 2019/3/14
- * Time: 15:12
- */
 
 namespace yunwuxin\twig\nodevisitors;
 
@@ -19,14 +13,14 @@ class GetAttrAdjuster implements NodeVisitorInterface
     /**
      * @inheritdoc
      */
-    public function enterNode(Node $node, Environment $env)
+    public function enterNode(Node $node, Environment $env): Node
     {
         // Is it a GetAttrExpression (and not a subclass)?
         if (get_class($node) === GetAttrExpression::class) {
             // "Clone" it into a GetAttrNode
             $nodes = [
                 'node'      => $node->getNode('node'),
-                'attribute' => $node->getNode('attribute')
+                'attribute' => $node->getNode('attribute'),
             ];
 
             if ($node->hasNode('arguments')) {
@@ -49,7 +43,7 @@ class GetAttrAdjuster implements NodeVisitorInterface
     /**
      * @inheritdoc
      */
-    public function leaveNode(Node $node, Environment $env)
+    public function leaveNode(Node $node, Environment $env): Node
     {
         return $node;
     }
