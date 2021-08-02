@@ -39,6 +39,8 @@ class Twig implements TemplateHandlerInterface
         'filters'             => [],
         'globals'             => [],
         'runtime'             => [],
+        'extensions'          => [],
+        'extra'               => null,
     ];
 
     /** @var FilesystemLoader */
@@ -108,6 +110,16 @@ class Twig implements TemplateHandlerInterface
         }
 
         $twig->addExtension(new Extension());
+
+        if (!empty($this->config['extensions'])) {
+            foreach ($this->config['extensions'] as $extension) {
+                $twig->addExtension(new $extension);
+            }
+        }
+
+        if (!empty($this->config['extra'])) {
+            $this->config['extra']($twig);
+        }
 
         $this->twig = $twig;
     }
