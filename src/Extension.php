@@ -1,17 +1,12 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: yunwuxin
- * Date: 2019/3/14
- * Time: 15:12
- */
 
 namespace yunwuxin\twig;
 
 use ReflectionClass;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigTest;
-use yunwuxin\twig\nodevisitors\GetAttrAdjuster;
+use yunwuxin\twig\parser\SwitchTokenParser;
+use yunwuxin\twig\visitor\GetAttrAdjuster;
 
 class Extension extends AbstractExtension
 {
@@ -19,6 +14,13 @@ class Extension extends AbstractExtension
     {
         return [
             new GetAttrAdjuster(),
+        ];
+    }
+
+    public function getTokenParsers(): array
+    {
+        return [
+            new SwitchTokenParser(),
         ];
     }
 
