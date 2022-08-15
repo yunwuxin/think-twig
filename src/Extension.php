@@ -29,7 +29,7 @@ class Extension extends AbstractExtension
         return [
             new TwigTest('instance of', function ($var, $instance) {
                 $ref = new ReflectionClass($instance);
-                return $ref->isInstance($var);
+                return is_object($var) && $ref->isInstance($var);
             }),
         ];
     }
